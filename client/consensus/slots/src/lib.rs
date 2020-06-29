@@ -207,11 +207,9 @@ pub trait SimpleSlotWorker<B: BlockT> {
 			return Box::pin(future::ready(Ok(())));
 		}
 
-		let claim = if let Some(claim) = self.claim_slot(&chain_head, slot_number, &epoch_data) {
-			claim
-		} else {
-			debug!(target: self.logging_target(), "Skipping proposal slot. Waiting for claimable slot.");
-			return Box::pin(future::ready(Ok(())))
+		let claim = match self.claim_slot(&chain_head, slot_number, &epoch_data) {
+			None => return Box::pin(future::ready(Ok(()))),
+			Some(claim) => claim,
 		};
 
 		debug!(
