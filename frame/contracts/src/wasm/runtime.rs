@@ -44,7 +44,7 @@ const TRAP_RETURN_CODE: u32 = 0x0100;
 /// to just terminate quickly in some cases.
 enum SpecialTrap {
 	/// Signals that trap was generated in response to call `ext_return` host function.
-	Return(Vec<u8>),
+	Return(u32, Vec<u8>),
 	/// Signals that trap was generated because the contract exhausted its gas limit.
 	OutOfGas,
 	/// Signals that a trap was generated in response to a succesful call to the
@@ -90,9 +90,11 @@ pub(crate) fn to_execution_result<E: Ext>(
 ) -> ExecResult {
 	match runtime.special_trap {
 		// The trap was the result of the execution `return` host function.
-		Some(SpecialTrap::Return(data)) => {
+		Some(SpecialTrap::Return(status, data)) => {
+			let status = (status & 0xFF).try_into()
+				.expect("exit_code is masked into the range of a u8; qed");
 			return Ok(ExecReturnValue {
-				status: STATUS_SUCCESS,
+				status,
 				data,
 			})
 		},
@@ -124,19 +126,9 @@ pub(crate) fn to_execution_result<E: Ext>(
 	// Check the exact type of the error.
 	match sandbox_result {
 		// No traps were generated. Proceed normally.
-		Ok(sp_sandbox::ReturnValue::Unit) => {
+		Ok(_) => {
 			Ok(ExecReturnValue { status: STATUS_SUCCESS, data: Vec::new() })
 		}
-		Ok(sp_sandbox::ReturnValue::Value(sp_sandbox::Value::I32(exit_code))) => {
-			let status = (exit_code & 0xFF).try_into()
-				.expect("exit_code is masked into the range of a u8; qed");
-			Ok(ExecReturnValue { status, data: Vec::new() })
-		}
-		// This should never happen as the return type of exported functions should have been
-		// validated by the code preparation process. However, because panics are really
-		// undesirable in the runtime code, we treat this as a trap for now. Eventually, we might
-		// want to revisit this.
-		Ok(_) => Err(ExecError { reason: "return type error".into() }),
 		// `Error::Module` is returned only if instantiation or linking failed (i.e.
 		// wasm binary tried to import a function that is not provided by the host).
 		// This shouldn't happen because validation process ought to reject such binaries.
@@ -662,7 +654,7 @@ define_env!(Env, <E: Ext>,
 	// successful result to the caller.
 	//
 	// This is the only way to return a data buffer to the caller.
-	ext_return(ctx, data_ptr: u32, data_len: u32) => {
+	ext_return(ctx, status_code: u32, data_ptr: u32, data_len: u32) => {
 		charge_gas(
 			ctx.gas_meter,
 			ctx.schedule,
@@ -671,7 +663,7 @@ define_env!(Env, <E: Ext>,
 		)?;
 
 		let output_data = read_sandbox_memory(ctx, data_ptr, data_len)?;
-		ctx.special_trap = Some(SpecialTrap::Return(output_data));
+		ctx.special_trap = Some(SpecialTrap::Return(status_code, output_data));
 
 		// The trap mechanism is used to immediately terminate the execution.
 		// This trap should be handled appropriately before returning the result

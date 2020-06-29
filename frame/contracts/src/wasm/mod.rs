@@ -799,7 +799,7 @@ mod tests {
 	const CODE_GET_STORAGE: &str = r#"
 (module
 	(import "env" "ext_get_storage" (func $ext_get_storage (param i32 i32 i32) (result i32)))
-	(import "env" "ext_return" (func $ext_return (param i32 i32)))
+	(import "env" "ext_return" (func $ext_return (param i32 i32 i32)))
 	(import "env" "memory" (memory 1 1))
 
 	;; [0, 32) key for get storage
@@ -847,6 +847,7 @@ mod tests {
 
 		;; Return the contents of the buffer
 		(call $ext_return
+			(i32.const 0)
 			(i32.const 36)
 			(get_local $buf_size)
 		)
@@ -1091,7 +1092,7 @@ mod tests {
 	const CODE_GAS_LEFT: &str = r#"
 (module
 	(import "env" "ext_gas_left" (func $ext_gas_left (param i32 i32)))
-	(import "env" "ext_return" (func $ext_return (param i32 i32)))
+	(import "env" "ext_return" (func $ext_return (param i32 i32 i32)))
 	(import "env" "memory" (memory 1 1))
 
 	;; size of our buffer is 32 bytes
@@ -1119,7 +1120,7 @@ mod tests {
 		)
 
 		;; return gas left
-		(call $ext_return (i32.const 0) (i32.const 8))
+		(call $ext_return (i32.const 0) (i32.const 0) (i32.const 8))
 
 		(unreachable)
 	)
@@ -1197,12 +1198,13 @@ mod tests {
 
 	const CODE_RETURN_FROM_START_FN: &str = r#"
 (module
-	(import "env" "ext_return" (func $ext_return (param i32 i32)))
+	(import "env" "ext_return" (func $ext_return (param i32 i32 i32)))
 	(import "env" "memory" (memory 1 1))
 
 	(start $start)
 	(func $start
 		(call $ext_return
+			(i32.const 0)
 			(i32.const 8)
 			(i32.const 4)
 		)
@@ -1387,7 +1389,7 @@ mod tests {
 	const CODE_RANDOM: &str = r#"
 (module
 	(import "env" "ext_random" (func $ext_random (param i32 i32 i32 i32)))
-	(import "env" "ext_return" (func $ext_return (param i32 i32)))
+	(import "env" "ext_return" (func $ext_return (param i32 i32 i32)))
 	(import "env" "memory" (memory 1 1))
 
 	;; [0,128) is reserved for the result of PRNG.
@@ -1429,6 +1431,7 @@ mod tests {
 
 		;; return the random data
 		(call $ext_return
+			(i32.const 0)
 			(i32.const 0)
 			(i32.const 32)
 		)
@@ -1644,7 +1647,7 @@ mod tests {
 	const CODE_RETURN_WITH_DATA: &str = r#"
 (module
 	(import "env" "ext_input" (func $ext_input (param i32 i32)))
-	(import "env" "ext_return" (func $ext_return (param i32 i32)))
+	(import "env" "ext_return" (func $ext_return (param i32 i32 i32)))
 	(import "env" "memory" (memory 1 1))
 
 	(data (i32.const 32) "\20")
@@ -1667,6 +1670,7 @@ mod tests {
 
 		;; Copy all but the first 4 bytes of the input data as the output data.
 		(call $ext_return
+			(i32.load (i32.const 0))
 			(i32.const 4)
 			(i32.sub (i32.load (i32.const 32)) (i32.const 4))
 		)
@@ -1676,7 +1680,7 @@ mod tests {
 "#;
 
 	#[test]
-	fn ext_return() {
+	fn ext_return_with_success_status() {
 		let output = execute(
 			CODE_RETURN_WITH_DATA,
 			hex!("00112233445566778899").to_vec(),
@@ -1686,5 +1690,18 @@ mod tests {
 
 		assert_eq!(output, ExecReturnValue { status: 0, data: hex!("445566778899").to_vec() });
 		assert!(output.is_success());
+	}
+
+	#[test]
+	fn return_with_failure_status() {
+		let output = execute(
+			CODE_RETURN_WITH_DATA,
+			hex!("112233445566778899").to_vec(),
+			MockExt::default(),
+			&mut GasMeter::new(GAS_LIMIT),
+		).unwrap();
+
+		assert_eq!(output, ExecReturnValue { status: 17, data: hex!("5566778899").to_vec() });
+		assert!(!output.is_success());
 	}
 }
