@@ -105,6 +105,7 @@ impl<T: Trait> Module<T> {
 			assert!(<Authorities<T>>::get().is_empty(), "Authorities are already initialized!");
 			<Authorities<T>>::put(authorities);
 		}
+		assert!(!<Authorities<T>>::get().is_empty(), "Authorities are left empty!");
 	}
 }
 
@@ -162,7 +163,7 @@ impl<T: Trait> FindAuthor<u32> for Module<T> {
 	}
 }
 
-/// We can not implement `FindAuthor` twice, because the compiler does not know if 
+/// We can not implement `FindAuthor` twice, because the compiler does not know if
 /// `u32 == T::AuthorityId` and thus, prevents us to implement the trait twice.
 #[doc(hidden)]
 pub struct FindAccountFromAuthorIndex<T, Inner>(sp_std::marker::PhantomData<(T, Inner)>);
