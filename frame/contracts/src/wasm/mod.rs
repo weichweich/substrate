@@ -1540,7 +1540,7 @@ mod tests {
 				&mut gas_meter
 			),
 			Err(ExecError {
-				reason: DispatchError::Other("contract trapped during execution"), buffer: _
+				reason: DispatchError::Other("contract trapped during execution")
 			})
 		);
 	}
@@ -1583,7 +1583,7 @@ mod tests {
 				MockExt::default(),
 				&mut gas_meter
 			),
-			Err(ExecError { reason: DispatchError::Other("contract trapped during execution"), buffer: _ })
+			Err(ExecError { reason: DispatchError::Other("contract trapped during execution") })
 		);
 	}
 
@@ -1682,21 +1682,6 @@ mod tests {
 
 		assert_eq!(output.data.len(), 0);
 		assert_eq!(output.data.capacity(), 1_234);
-	}
-
-	#[test]
-	fn output_buffer_capacity_preserved_on_failure() {
-		let mut input_data = Vec::with_capacity(1_234);
-		input_data.extend_from_slice(&[1, 2, 3, 4, 5][..]);
-
-		let error = execute(
-			CODE_SIMPLE_ASSERT,
-			input_data,
-			MockExt::default(),
-			&mut GasMeter::new(GAS_LIMIT),
-		).err().unwrap();
-
-		assert_eq!(error.buffer.capacity(), 1_234);
 	}
 
 	const CODE_RETURN_WITH_DATA: &str = r#"
