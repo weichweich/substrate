@@ -272,9 +272,9 @@ where
 					.read()
 					.key_pair_by_type::<P>(&p, sp_application_crypto::key_types::AURA)
 					.ok()
-					.or_else(|opt| {
+					.or_else(|| {
 						trace!(target: "aura",
-							"Authority `{}` not in keystore",
+							"Authority `{:?}` not in keystore",
 							p,
 						);
 						None
