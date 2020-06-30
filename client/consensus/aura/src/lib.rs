@@ -270,7 +270,7 @@ where
 			.and_then(|p| {
 				self.keystore
 					.read()
-					.key_pair_by_type::<P>(&p, sp_application_crypto::key_types::AURA)
+					.key_pair::<P>(&p)
 					.ok()
 					.or_else(|| {
 						trace!(target: "aura",
