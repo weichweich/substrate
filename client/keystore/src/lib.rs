@@ -241,14 +241,14 @@ impl Store {
 			&phrase,
 			self.password.as_ref().map(|p| &***p),
 		).map_err(|_| Error::InvalidPhrase).map_err(|e| {
-			log::warn!(target: "keystore", "Invalid phrase in key store `{:?}`", public);
+			log::warn!(target: "keystore", "Invalid phrase in key store `{}`", public.as_slice());
 			e
 		})?;
 
 		if &pair.public() == public {
 			Ok(pair)
 		} else {
-			log::warn!(target: "keystore", "Public key from phrase ({:?}) doesn't match stored public key ({:?})", pair.public(), public);
+			log::warn!(target: "keystore", "Public key from phrase ({}) doesn't match stored public key ({})", pair.public().as_slice(), public.as_slice());
 			Err(Error::InvalidPassword)
 		}
 	}
