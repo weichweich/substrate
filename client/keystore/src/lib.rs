@@ -28,6 +28,8 @@ use sp_core::{
 use sp_application_crypto::{AppKey, AppPublic, AppPair, ed25519, sr25519, ecdsa};
 use parking_lot::RwLock;
 
+use log;
+
 /// Keystore pointer
 pub type KeyStorePtr = Arc<RwLock<Store>>;
 
@@ -153,6 +155,7 @@ impl Store {
 	///
 	/// Places it into the file system store.
 	pub fn insert_by_type<Pair: PairT>(&self, key_type: KeyTypeId, suri: &str) -> Result<Pair> {
+		log::trace!(target: "keystore", "Insert new key with type: {:?}", key_type);
 		let pair = Pair::from_string(
 			suri,
 			self.password.as_ref().map(|p| &***p)
