@@ -274,9 +274,10 @@ where
 					.ok()
 					.or_else(|| {
 						trace!(target: "aura",
-							"Authority `{:?}` not in keystore. Stored keys are: {:?}",
+							"Authority `{:?}` not in keystore. Stored keys are: {:?}, expected type is: {:?}",
 							p,
-							self.keystore.read().public_keys::<P::Public>()
+							self.keystore.read().public_keys::<P::Public>(),
+							sp_application_crypto::key_types::AURA,
 						);
 						None
 					})
