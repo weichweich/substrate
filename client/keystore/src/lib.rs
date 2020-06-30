@@ -220,7 +220,7 @@ impl Store {
 		}
 
 		let path = self.key_file_path(public, key_type).ok_or_else(|| Error::Unavailable)?;
-		let file = File::open(path).map_err(|e| {
+		let file = File::open(path.clone()).map_err(|e| {
 			log::trace!(target: "keystore", "Key not in file store `{:?}`", path);
 			e
 		})?;
