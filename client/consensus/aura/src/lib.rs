@@ -270,14 +270,14 @@ where
 			.and_then(|p| {
 				self.keystore
 					.read()
-					.key_pair::<P>(&p)
+					.key_pair_by_type::<P>(&p, P::Public::ID)
 					.ok()
 					.or_else(|| {
 						trace!(target: "aura",
 							"Authority `{:?}` not in keystore. Stored keys are: {:?}, expected type is: {:?}",
 							p,
 							self.keystore.read().public_keys::<P::Public>(),
-							sp_application_crypto::key_types::AURA,
+							P::Public::ID,
 						);
 						None
 					})
