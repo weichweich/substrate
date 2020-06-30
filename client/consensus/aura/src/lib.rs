@@ -274,8 +274,9 @@ where
 					.ok()
 					.or_else(|| {
 						trace!(target: "aura",
-							"Authority `{:?}` not in keystore",
+							"Authority `{:?}` not in keystore. Stored keys are: {:?}",
 							p,
+							self.keystore.read().public_keys::<P::Public>()
 						);
 						None
 					})
