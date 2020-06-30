@@ -225,7 +225,10 @@ impl Store {
 			e
 		})?;
 
-		serde_json::from_reader(&file).map_err(Into::into)
+		serde_json::from_reader(&file).map_err(|e| {
+			log::warn!(target: "keystore", "Could not read key file `{:?}`", path);
+			Into::into(e)
+		})
 	}
 
 	/// Get a key pair for the given public key and key type.
@@ -237,11 +240,15 @@ impl Store {
 		let pair = Pair::from_string(
 			&phrase,
 			self.password.as_ref().map(|p| &***p),
-		).map_err(|_| Error::InvalidPhrase)?;
+		).map_err(|_| Error::InvalidPhrase).map_err(|e| {
+			log::warn!(target: "keystore", "Invalid phrase in key store `{:?}`", public);
+			e
+		})?;
 
 		if &pair.public() == public {
 			Ok(pair)
 		} else {
+			log::warn!(target: "keystore", "Public key from phrase ({:?}) doesn't match stored public key ({:?})", pair.public(), public);
 			Err(Error::InvalidPassword)
 		}
 	}
