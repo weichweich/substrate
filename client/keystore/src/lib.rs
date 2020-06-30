@@ -215,11 +215,15 @@ impl Store {
 	/// Get the key phrase for a given public key and key type.
 	fn key_phrase_by_type(&self, public: &[u8], key_type: KeyTypeId) -> Result<String> {
 		if let Some(phrase) = self.get_additional_pair(public, key_type) {
+			log::trace!(target: "keystore", "Got key `{:?}` from memory", public);
 			return Ok(phrase.clone())
 		}
 
 		let path = self.key_file_path(public, key_type).ok_or_else(|| Error::Unavailable)?;
-		let file = File::open(path)?;
+		let file = File::open(path).map_err(|e| {
+			log::trace!(target: "keystore", "Key not in file store `{:?}`", path);
+			e
+		})?;
 
 		serde_json::from_reader(&file).map_err(Into::into)
 	}
